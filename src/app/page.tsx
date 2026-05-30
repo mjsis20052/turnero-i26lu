@@ -52,6 +52,13 @@ const SparklesIcon = () => (
   </svg>
 );
 
+const CogIcon = () => (
+  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+  </svg>
+);
+
 // Sample Data
 const SERVICES = [
   { id: "srv-1", name: "Asesoría de Negocios", duration: "45 min", price: "$45", color: "from-blue-500 to-indigo-600" },
@@ -73,6 +80,37 @@ interface Appointment {
 export default function Home() {
   // Welcome Modal State
   const [showWelcome, setShowWelcome] = useState(true);
+
+  // Settings & DB Test States
+  const [showSettings, setShowSettings] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "success" | "error">("idle");
+  const [connectionLatency, setConnectionLatency] = useState<number | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [connectionTime, setConnectionTime] = useState<string | null>(null);
+
+  const handleTestConnection = async () => {
+    setConnectionStatus("testing");
+    setConnectionError(null);
+    setConnectionLatency(null);
+    setConnectionTime(null);
+
+    try {
+      const res = await fetch("/api/test-connection");
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setConnectionStatus("success");
+        setConnectionLatency(data.latencyMs);
+        setConnectionTime(data.dbTime);
+      } else {
+        setConnectionStatus("error");
+        setConnectionError(data.error || data.message || "Error al conectar a PostgreSQL");
+      }
+    } catch (err: any) {
+      setConnectionStatus("error");
+      setConnectionError(err.message || String(err));
+    }
+  };
 
   // Services State (dynamically fetched, defaults to static)
   const [services, setServices] = useState<typeof SERVICES>(SERVICES);
@@ -318,11 +356,21 @@ export default function Home() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
+            className="flex items-center gap-3"
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
               Framer Motion Active
             </span>
+            
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer flex items-center gap-2 text-xs font-semibold"
+              title="Configuración de Base de Datos"
+            >
+              <CogIcon />
+              <span>Configuración</span>
+            </button>
           </motion.div>
         </div>
       </header>
@@ -762,6 +810,168 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Settings Sidebar (Configuración) */}
+      <AnimatePresence>
+        {showSettings && (
+          <>
+            {/* Backdrop Blur Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSettings(false)}
+              className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm cursor-pointer"
+            />
+
+            {/* Sidebar Drawer */}
+            <motion.div
+              initial={{ x: "100%", opacity: 0.9 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%", opacity: 0.9 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-slate-900 border-l border-slate-800 shadow-2xl p-6 md:p-8 flex flex-col justify-between overflow-y-auto"
+            >
+              <div className="space-y-8">
+                {/* Header of Sidebar */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-slate-950 border border-slate-800 rounded-xl text-indigo-400">
+                      <CogIcon />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg text-white">Configuración</h3>
+                      <p className="text-xs text-slate-500">Gestión de base de datos y sistema.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSettings(false)}
+                    className="p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Section: Base de datos */}
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Base de Datos (Neon PostgreSQL)</h4>
+                  
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-900 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">💾</span>
+                      <div className="space-y-1">
+                        <span className="text-xs font-semibold text-slate-200 block">Host del Servidor</span>
+                        <code className="text-[10px] text-indigo-300 block break-all font-mono">
+                          ep-flat-salad-apbzw9yl-pooler.c-7.us-east-1.aws.neon.tech
+                        </code>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg">🗄️</span>
+                      <div className="space-y-0.5">
+                        <span className="text-xs font-semibold text-slate-200 block">Base de Datos</span>
+                        <span className="text-xs text-slate-400 font-mono">neondb (PostgreSQL)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Database connection test widget */}
+                  <div className="p-4 rounded-2xl bg-slate-950 border border-slate-900 space-y-4">
+                    <h5 className="text-xs font-semibold text-slate-300">Prueba de Conexión</h5>
+                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                      Verifica la comunicación directa entre los servidores de la aplicación (Next.js) y tu instancia de PostgreSQL en Neon.
+                    </p>
+
+                    <button
+                      onClick={handleTestConnection}
+                      disabled={connectionStatus === "testing"}
+                      className={`w-full py-2.5 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        connectionStatus === "testing"
+                          ? "bg-slate-900 border border-slate-800 text-slate-500 cursor-not-allowed"
+                          : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/10"
+                      }`}
+                    >
+                      {connectionStatus === "testing" ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          </svg>
+                          Probando...
+                        </>
+                      ) : (
+                        "Probar Conexión"
+                      )}
+                    </button>
+
+                    {/* Connection Test Result States */}
+                    <AnimatePresence mode="wait">
+                      {connectionStatus === "success" && (
+                        <motion.div
+                          key="success-test"
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1 text-emerald-400"
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs">
+                            <span className="text-sm">✓</span>
+                            <span>¡Conexión Exitosa!</span>
+                          </div>
+                          <p className="text-[10px] text-emerald-500/80 leading-normal">
+                            Postgres respondió con éxito. Latencia medida: <strong className="text-emerald-400">{connectionLatency} ms</strong>.
+                          </p>
+                          {connectionTime && (
+                            <span className="text-[9px] text-emerald-600 block font-mono">
+                              Hora DB: {connectionTime}
+                            </span>
+                          )}
+                        </motion.div>
+                      )}
+
+                      {connectionStatus === "error" && (
+                        <motion.div
+                          key="error-test"
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                          className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 space-y-1.5 text-red-400"
+                        >
+                          <div className="flex items-center gap-2 font-bold text-xs">
+                            <span className="text-sm">✗</span>
+                            <span>Fallo de Conexión</span>
+                          </div>
+                          <p className="text-[10px] text-red-500/80 leading-normal">
+                            No se pudo establecer comunicación con Neon PostgreSQL.
+                          </p>
+                          {connectionError && (
+                            <code className="text-[9px] text-red-400 block bg-slate-950 p-2 rounded border border-red-500/10 font-mono break-all max-h-[100px] overflow-y-auto">
+                              {connectionError}
+                            </code>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer of Sidebar */}
+              <div className="pt-6 border-t border-slate-800 text-center">
+                <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold block">
+                  Turnero System Settings
+                </span>
+                <span className="text-[9px] text-slate-600 mt-1 block">
+                  v0.1.0 • Neon Postgres Serverless
+                </span>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
