@@ -71,6 +71,9 @@ interface Appointment {
 }
 
 export default function Home() {
+  // Welcome Modal State
+  const [showWelcome, setShowWelcome] = useState(true);
+
   // Scheduling Wizard State
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<typeof SERVICES[0] | null>(null);
@@ -136,6 +139,94 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden relative">
+      {/* Welcome Modal */}
+      <AnimatePresence>
+        {showWelcome && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+              className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative overflow-hidden group"
+            >
+              {/* Decorative gradient overlay */}
+              <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              {/* Close Button X */}
+              <button
+                onClick={() => setShowWelcome(false)}
+                className="absolute top-4 right-4 p-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              {/* Welcome Badge Icon */}
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-xl shadow-indigo-500/20">
+                  <svg className="w-8 h-8 text-white animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-indigo-200">
+                    ¡Te damos la bienvenida a Turnero!
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    Tu nuevo gestor inteligente de reservas animado y moderno.
+                  </p>
+                </div>
+
+                {/* Features List */}
+                <div className="w-full text-left space-y-3 bg-slate-950/50 border border-slate-800/60 p-4 rounded-2xl">
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">📅</span>
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-200">Asistente por Pasos</h4>
+                      <p className="text-[11px] text-slate-400">Un flujo guiado con animaciones fluidas para solicitar turnos.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">✨</span>
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-200">Framer Motion Activo</h4>
+                      <p className="text-[11px] text-slate-400">Reordenamientos y listas dinámicas automáticas en tiempo real.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="text-lg">⚡</span>
+                    <div>
+                      <h4 className="text-xs font-semibold text-slate-200">Next.js App Router</h4>
+                      <p className="text-[11px] text-slate-400">Rendimiento óptimo y soporte nativo para TypeScript y Tailwind CSS.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Confirm Action Button */}
+                <button
+                  onClick={() => setShowWelcome(false)}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:translate-y-[-1px] active:translate-y-[0px] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Comenzar
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Background Gradients */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/20 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-pink-900/10 blur-[120px] pointer-events-none" />
