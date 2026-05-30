@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // SVGs and Icons
@@ -74,6 +74,10 @@ export default function Home() {
   // Welcome Modal State
   const [showWelcome, setShowWelcome] = useState(true);
 
+  // Services State (dynamically fetched, defaults to static)
+  const [services, setServices] = useState<typeof SERVICES>(SERVICES);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+
   // Scheduling Wizard State
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState<typeof SERVICES[0] | null>(null);
@@ -82,24 +86,42 @@ export default function Home() {
   const [clientName, setClientName] = useState("");
 
   // Appointments List State
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: "apt-1",
-      service: "Desarrollo Web & UX",
-      date: "2026-06-02",
-      time: "10:30 AM",
-      clientName: "Sofia Rodríguez",
-      color: "from-purple-500 to-pink-600",
-    },
-    {
-      id: "apt-2",
-      service: "Asesoría de Negocios",
-      date: "2026-06-03",
-      time: "03:30 PM",
-      clientName: "Mateo Silva",
-      color: "from-blue-500 to-indigo-600",
-    },
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [isLoadingAppointments, setIsLoadingAppointments] = useState(true);
+
+  // Fetch Services and Appointments on mount
+  useEffect(() => {
+    async function loadServices() {
+      try {
+        const res = await fetch("/api/services");
+        if (res.ok) {
+          const data = await res.json();
+          setServices(data);
+        }
+      } catch (error) {
+        console.error("Error al cargar servicios de Neon:", error);
+      } finally {
+        setIsLoadingServices(false);
+      }
+    }
+
+    async function loadAppointments() {
+      try {
+        const res = await fetch("/api/appointments");
+        if (res.ok) {
+          const data = await res.json();
+          setAppointments(data);
+        }
+      } catch (error) {
+        console.error("Error al cargar turnos de Neon:", error);
+      } finally {
+        setIsLoadingAppointments(false);
+      }
+    }
+
+    loadServices();
+    loadAppointments();
+  }, []);
 
   const handleNextStep = () => {
     if (step === 1 && selectedService) setStep(2);
@@ -110,31 +132,59 @@ export default function Home() {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleBookAppointment = (e: React.FormEvent) => {
+  const handleBookAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedService || !selectedDate || !selectedTime || !clientName) return;
 
-    const newApt: Appointment = {
-      id: `apt-${Date.now()}`,
-      service: selectedService.name,
-      date: selectedDate,
-      time: selectedTime,
-      clientName,
-      color: selectedService.color,
-    };
+    try {
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          service: selectedService.name,
+          date: selectedDate,
+          time: selectedTime,
+          clientName,
+          color: selectedService.color,
+        }),
+      });
 
-    setAppointments([newApt, ...appointments]);
-    
-    // Reset Form
-    setStep(1);
-    setSelectedService(null);
-    setSelectedDate("");
-    setSelectedTime("");
-    setClientName("");
+      if (res.ok) {
+        const newApt = await res.json();
+        setAppointments((prev) => [newApt, ...prev]);
+        
+        // Reset Form
+        setStep(1);
+        setSelectedService(null);
+        setSelectedDate("");
+        setSelectedTime("");
+        setClientName("");
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "No se pudo agendar el turno");
+      }
+    } catch (error) {
+      console.error("Error al agendar el turno:", error);
+      alert("Hubo un error de red al intentar agendar el turno.");
+    }
   };
 
-  const handleDeleteAppointment = (id: string) => {
-    setAppointments(appointments.filter((apt) => apt.id !== id));
+  const handleDeleteAppointment = async (id: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "No se pudo eliminar el turno");
+      }
+    } catch (error) {
+      console.error("Error al eliminar el turno:", error);
+      alert("Hubo un error de red al intentar eliminar el turno.");
+    }
   };
 
   return (
@@ -425,7 +475,7 @@ export default function Home() {
                     >
                       <h3 className="text-lg font-semibold text-slate-200">1. Selecciona un Servicio</h3>
                       <div className="flex flex-col gap-3">
-                        {SERVICES.map((service) => {
+                        {services.map((service) => {
                           const isSelected = selectedService?.id === service.id;
                           return (
                             <motion.button
