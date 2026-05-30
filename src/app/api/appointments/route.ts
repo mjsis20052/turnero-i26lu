@@ -10,9 +10,9 @@ export async function GET() {
       ORDER BY date ASC, time ASC
     `;
     return NextResponse.json(rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al obtener turnos:", error);
-    return NextResponse.json({ error: "Error interno al obtener los turnos" }, { status: 500 });
+    return NextResponse.json({ error: error.message || String(error) }, { status: 500 });
   }
 }
 
@@ -34,8 +34,8 @@ export async function POST(request: Request) {
     `;
 
     return NextResponse.json(result[0], { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error al crear el turno:", error);
-    return NextResponse.json({ error: "Error interno al crear el turno" }, { status: 500 });
+    return NextResponse.json({ error: error.message || String(error) }, { status: 500 });
   }
 }
